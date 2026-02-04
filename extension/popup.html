@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第二大脑</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f9fafb;
+      color: #111827;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 16px;
+    }
+
+    .page-info {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .page-info .title {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      line-height: 1.4;
+      max-height: 42px;
+      overflow: hidden;
+    }
+
+    .page-info .meta {
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .page-info .platform {
+      background: #e5e7eb;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .page-info .author {
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      text-align: center;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .status.success {
+      display: block;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status.error {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status.loading {
+      display: block;
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .status.ocr {
+      display: block;
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: #e5e7eb;
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .progress-bar .fill {
+      height: 100%;
+      background: #f59e0b;
+      transition: width 0.3s ease;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #3B82F6;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #2563EB;
+    }
+
+    .btn-primary:disabled {
+      background: #93c5fd;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+      margin-top: 8px;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .settings {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .settings-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .settings-item label {
+      font-size: 12px;
+      color: #6b7280;
+      cursor: pointer;
+    }
+
+    .settings-item .desc {
+      font-size: 10px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: #e5e7eb;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle.active {
+      background: #3B82F6;
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle.active::after {
+      transform: translateX(20px);
+    }
+
+    .footer {
+      padding: 12px 16px;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    .footer a {
+      font-size: 12px;
+      color: #3B82F6;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>第二大脑</h1>
+    <p>一键保存当前页面</p>
+  </div>
+
+  <div class="content">
+    <div class="page-info">
+      <div class="title" id="pageTitle">加载中...</div>
+      <div class="meta">
+        <span class="platform" id="pagePlatform">-</span>
+        <span class="author" id="pageAuthor">-</span>
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <button class="btn btn-primary" id="saveBtn">
+      保存到第二大脑
+    </button>
+
+    <button class="btn btn-secondary" id="retryBtn" style="display: none;">
+      重新提取
+    </button>
+
+    <div class="settings">
+      <div class="settings-item">
+        <div>
+          <label>
+            <input type="checkbox" id="enableOcr" checked>
+            识别图片文字 (OCR)
+          </label>
+          <div class="desc">自动识别页面中所有图片的文字</div>
+        </div>
+        <div class="toggle" id="ocrToggle"></div>
+      </div>
+
+      <div class="settings-item">
+        <label>
+          <input type="checkbox" id="autoSummarize" checked>
+          保存后自动 AI 总结
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="#" id="openApp">打开第二大脑网页</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
