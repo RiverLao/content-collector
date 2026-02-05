@@ -1,5 +1,6 @@
 export interface Content {
   id: string
+  user_id?: string  // 关联用户ID
   url: string
   title: string | null
   platform: string | null

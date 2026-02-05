@@ -1,8 +1,9 @@
 -- 第二大脑数据库 Schema
 
--- 内容表
+-- 内容表（按用户隔离）
 create table contents (
   id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id),  -- 关联用户
   url text not null,
   title text,
   platform text,
@@ -23,16 +24,32 @@ create table tags (
   created_at timestamptz default now()
 );
 
--- 用户设置表（存储自定义提示词等）
+-- 用户设置表（按用户隔离）
 create table user_settings (
   id uuid default gen_random_uuid() primary key,
-  user_id text not null,   -- 可以后续扩展为认证用户
+  user_id uuid references auth.users(id) not null,  -- 关联用户
   key text not null,
   value text,
   unique(user_id, key)
 );
 
+-- 启用 RLS
+alter table contents enable row level security;
+alter table tags enable row level security;
+alter table user_settings enable row level security;
+
+-- RLS 策略：用户只能看到自己的数据
+create policy "用户只能查看自己的内容" on contents
+  for all using (auth.uid() = user_id);
+
+create policy "用户只能管理自己的标签" on tags
+  for all using (auth.uid() = user_id);
+
+create policy "用户只能管理自己的设置" on user_settings
+  for all using (auth.uid() = user_id);
+
 -- 创建索引
+create index idx_contents_user_id on contents(user_id);
 create index idx_contents_created_at on contents(created_at desc);
 create index idx_contents_tags on contents using gin(tags);
 create index idx_contents_url on contents(url);

@@ -13,7 +13,7 @@
 
 ## 技术栈
 
-- **前端框架**：Next.js 14 + React
+- **前端框架**：Next.js 16 + React
 - **样式**：Tailwind CSS
 - **数据库**：Supabase
 - **AI模型**：DeepSeek Chat

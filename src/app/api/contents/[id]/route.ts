@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { getSupabaseClient } from '@/lib/supabase'
 
 // GET /api/contents/[id] - 获取单个内容
@@ -10,8 +11,18 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: '请先登录' },
+        { status: 401 }
+      )
+    }
+
+    const client = getSupabaseClient()
+    if (!client) {
       return NextResponse.json(
         { error: '数据库未配置' },
         { status: 500 }
@@ -20,10 +31,11 @@ export async function GET(
 
     const { id } = await params
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('contents')
       .select('*')
       .eq('id', id)
+      .eq('user_id', user.id)  // 确保只能查看自己的内容
       .single()
 
     if (error || !data) {
@@ -48,8 +60,18 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: '请先登录' },
+        { status: 401 }
+      )
+    }
+
+    const client = getSupabaseClient()
+    if (!client) {
       return NextResponse.json(
         { error: '数据库未配置' },
         { status: 500 }
@@ -68,10 +90,11 @@ export async function PUT(
     if (body.is_favorite !== undefined) updateData.is_favorite = body.is_favorite
     if (body.is_deleted !== undefined) updateData.is_deleted = body.is_deleted
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('contents')
       .update(updateData as never)
       .eq('id', id)
+      .eq('user_id', user.id)  // 确保只能更新自己的内容
       .select()
       .single()
 
@@ -98,8 +121,18 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: '请先登录' },
+        { status: 401 }
+      )
+    }
+
+    const client = getSupabaseClient()
+    if (!client) {
       return NextResponse.json(
         { error: '数据库未配置' },
         { status: 500 }
@@ -108,10 +141,11 @@ export async function DELETE(
 
     const { id } = await params
 
-    const { error } = await supabase
+    const { error } = await client
       .from('contents')
       .delete()
       .eq('id', id)
+      .eq('user_id', user.id)  // 确保只能删除自己的内容
 
     if (error) {
       console.error('删除内容失败:', error)

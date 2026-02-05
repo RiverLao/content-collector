@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { getSupabaseClient } from '@/lib/supabase'
 
-// GET /api/contents - 获取内容列表
+// GET /api/contents - 获取当前用户的内容列表
 export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
+    // 使用 server client 获取当前用户
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // 如果用户已登录，只获取该用户的数据
+    const client = getSupabaseClient()
+    if (!client) {
       return NextResponse.json(
         { error: '数据库未配置' },
         { status: 500 }
@@ -20,9 +26,17 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    let query = supabase
+    let query = client
       .from('contents')
       .select('*', { count: 'exact' })
+
+    // 如果用户已登录，添加 user_id 筛选（RLS 会自动处理）
+    // 如果未登录，返回空数据或所有数据（取决于业务需求）
+    if (user) {
+      query = query.eq('user_id', user.id)
+    }
+
+    query = query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -78,11 +92,21 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/contents - 保存新内容
+// POST /api/contents - 保存新内容（需要登录）
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: '请先登录' },
+        { status: 401 }
+      )
+    }
+
+    const client = getSupabaseClient()
+    if (!client) {
       return NextResponse.json(
         { error: '数据库未配置' },
         { status: 500 }
@@ -100,6 +124,7 @@ export async function POST(request: NextRequest) {
     }
 
     const insertData = {
+      user_id: user.id,
       url,
       title,
       platform,
@@ -109,7 +134,7 @@ export async function POST(request: NextRequest) {
       tags: tags || []
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('contents')
       .insert(insertData as never)
       .select()
