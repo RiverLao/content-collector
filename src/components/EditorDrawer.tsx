@@ -46,6 +46,7 @@ export function EditorDrawer({ content, isOpen, onClose, onSave }: EditorDrawerP
       }),
     ],
     content: content.raw_content || '',
+    immediatelyRender: false,
   })
 
   // 获取当前选中文字的样式状态

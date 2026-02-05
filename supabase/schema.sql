@@ -48,7 +48,10 @@ drop policy if exists "用户只能管理自己的标签" on tags;
 drop policy if exists "用户只能管理自己的设置" on user_settings;
 
 create policy "用户只能查看自己的内容" on contents
-  for all using (auth.uid() = user_id);
+  for all 
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id); user_id)
+  with check (auth.uid() = user_id);
 
 create policy "用户只能管理自己的标签" on tags
   for all using (auth.uid() = user_id);

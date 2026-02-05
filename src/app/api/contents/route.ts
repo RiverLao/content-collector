@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getSupabaseClient } from '@/lib/supabase'
 import { getCorsHeaders } from '@/lib/cors'
 
 // OPTIONS 预检请求
@@ -17,14 +16,8 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    const client = getSupabaseClient()
-    if (!client) {
-      return NextResponse.json(
-        { error: '数据库未配置' },
-        { status: 500, headers: getCorsHeaders(request) }
-      )
-    }
-
+    // 必须使用 SSR 客户端 (supabase) 而不是全局单例 (getSupabaseClient)，否则无法通过 RLS
+    
     const { searchParams } = new URL(request.url)
     const tag = searchParams.get('tag')
     const search = searchParams.get('search')
@@ -33,12 +26,21 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    let query = client
+    let query = supabase
       .from('contents')
       .select('*', { count: 'exact' })
 
+    // 如果用户未登录，RLS 会自然过滤掉所有数据，或者我们可以提前返回空
     if (user) {
       query = query.eq('user_id', user.id)
+    } else {
+      // 未登录直接返回空，避免无效查询
+      return NextResponse.json({
+        contents: [],
+        total: 0,
+        limit,
+        offset
+      }, { headers: getCorsHeaders(request) })
     }
 
     query = query
@@ -70,6 +72,7 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query
 
     if (error) {
+      console.error('Fetch Contents Error:', error)
       return NextResponse.json(
         { error: '获取内容失败' },
         { status: 500, headers: getCorsHeaders(request) }
@@ -83,6 +86,7 @@ export async function GET(request: NextRequest) {
       offset
     }, { headers: getCorsHeaders(request) })
   } catch (error) {
+    console.error('API Error:', error)
     return NextResponse.json(
       { error: '服务器错误' },
       { status: 500, headers: getCorsHeaders(request) }
@@ -103,13 +107,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const client = getSupabaseClient()
-    if (!client) {
-      return NextResponse.json(
-        { error: '数据库未配置' },
-        { status: 500, headers: getCorsHeaders(request) }
-      )
-    }
+    // 必须使用 SSR 客户端 (supabase) 进行插入，它携带了用户的 Auth Token
+    // 之前使用 getSupabaseClient() 是匿名客户端，会导致 RLS 失败
 
     const body = await request.json()
     const { url, title, platform, raw_content, ai_summary, summary_prompt, tags } = body
@@ -132,7 +131,7 @@ export async function POST(request: NextRequest) {
       tags: tags || []
     }
 
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('contents')
       .insert(insertData as never)
       .select()
