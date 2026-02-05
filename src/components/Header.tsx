@@ -29,8 +29,9 @@ export function Header({ onOpenSettings, searchValue, onSearchChange, allTags, s
     }
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setUser(session?.user ?? null)
+      router.refresh()
     })
 
     return () => subscription.unsubscribe()

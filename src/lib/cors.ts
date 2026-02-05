@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 
-export function getCorsHeaders(request: NextRequest) {
+export function getCorsHeaders(request: NextRequest): Record<string, string> {
   const origin = request.headers.get('origin')
   
   // 允许的 Origin 列表
