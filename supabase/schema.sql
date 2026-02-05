@@ -3,7 +3,7 @@
 -- 内容表（按用户隔离）
 create table contents (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users(id),  -- 关联用户
+  user_id uuid,  -- 关联用户（不设置外键约束，RLS 使用 auth.uid()）
   url text not null,
   title text,
   platform text,
@@ -27,7 +27,7 @@ create table tags (
 -- 用户设置表（按用户隔离）
 create table user_settings (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users(id) not null,  -- 关联用户
+  user_id uuid not null,  -- 关联用户
   key text not null,
   value text,
   unique(user_id, key)
