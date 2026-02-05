@@ -5,8 +5,8 @@ let isSaving = false
 
 // 获取第二大脑后端地址
 function getBackendUrl() {
-  // 默认使用 localhost:3000，可以从存储读取自定义配置
-  return localStorage.getItem('backendUrl') || 'http://localhost:3000'
+  // 默认使用 Vercel 线上版本
+  return localStorage.getItem('backendUrl') || 'https://content-collector.vercel.app'
 }
 
 // 更新页面信息显示
