@@ -2,27 +2,42 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseClient } from '@/lib/supabase'
 
+// CORS 头
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  }
+}
+
+// OPTIONS 预检请求
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders(),
+  })
+}
+
 // GET /api/contents - 获取当前用户的内容列表
 export async function GET(request: NextRequest) {
   try {
-    // 使用 server client 获取当前用户
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    // 如果用户已登录，只获取该用户的数据
     const client = getSupabaseClient()
     if (!client) {
       return NextResponse.json(
         { error: '数据库未配置' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders() }
       )
     }
 
     const { searchParams } = new URL(request.url)
     const tag = searchParams.get('tag')
     const search = searchParams.get('search')
-    const favorite = searchParams.get('favorite') // 'true' | 'false' | null
-    const deleted = searchParams.get('deleted') // 'true' | 'false' | null
+    const favorite = searchParams.get('favorite')
+    const deleted = searchParams.get('deleted')
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
 
@@ -30,8 +45,6 @@ export async function GET(request: NextRequest) {
       .from('contents')
       .select('*', { count: 'exact' })
 
-    // 如果用户已登录，添加 user_id 筛选（RLS 会自动处理）
-    // 如果未登录，返回空数据或所有数据（取决于业务需求）
     if (user) {
       query = query.eq('user_id', user.id)
     }
@@ -40,29 +53,24 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    // 筛选已收藏
     if (favorite === 'true') {
       query = query.eq('is_favorite', true)
     } else if (favorite === 'false') {
       query = query.eq('is_favorite', false)
     }
 
-    // 筛选已删除
     if (deleted === 'true') {
       query = query.eq('is_deleted', true)
     } else if (deleted === 'false') {
       query = query.eq('is_deleted', false)
     } else {
-      // 默认不显示已删除的
       query = query.eq('is_deleted', false)
     }
 
-    // 按标签筛选
     if (tag) {
       query = query.contains('tags', [tag])
     }
 
-    // 搜索
     if (search) {
       query = query.or(`title.ilike.%${search}%,ai_summary.ilike.%${search}%`)
     }
@@ -70,10 +78,9 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query
 
     if (error) {
-      console.error('获取内容失败:', error)
       return NextResponse.json(
         { error: '获取内容失败' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders() }
       )
     }
 
@@ -82,17 +89,16 @@ export async function GET(request: NextRequest) {
       total: count || 0,
       limit,
       offset
-    })
+    }, { headers: corsHeaders() })
   } catch (error) {
-    console.error('获取内容列表错误:', error)
     return NextResponse.json(
       { error: '服务器错误' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders() }
     )
   }
 }
 
-// POST /api/contents - 保存新内容（需要登录）
+// POST /api/contents - 保存新内容
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -101,7 +107,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: '请先登录' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders() }
       )
     }
 
@@ -109,7 +115,7 @@ export async function POST(request: NextRequest) {
     if (!client) {
       return NextResponse.json(
         { error: '数据库未配置' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders() }
       )
     }
 
@@ -119,7 +125,7 @@ export async function POST(request: NextRequest) {
     if (!url) {
       return NextResponse.json(
         { error: 'URL 不能为空' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders() }
       )
     }
 
@@ -141,19 +147,17 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('保存内容失败:', error)
       return NextResponse.json(
         { error: '保存失败' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders() }
       )
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json(data, { headers: corsHeaders() })
   } catch (error) {
-    console.error('保存内容错误:', error)
     return NextResponse.json(
       { error: '服务器错误' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders() }
     )
   }
 }
