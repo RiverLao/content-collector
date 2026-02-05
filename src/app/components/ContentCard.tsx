@@ -407,7 +407,7 @@ export function ContentCard({
       <div className="border-t border-gray-100 px-4 py-2 bg-gray-50 flex items-center justify-between">
         {/* 域名标签 */}
         <span className="text-xs text-gray-400 truncate max-w-[200px]" title={content.url}>
-          {new URL(content.url).hostname}
+          {content.url ? new URL(content.url).hostname : '链接'}
         </span>
 
         {/* 操作按钮 */}
