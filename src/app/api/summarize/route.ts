@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { summarizeContent, streamSummarize } from '@/lib/deepseek'
-
-// CORS 头
-function corsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  }
-}
+import { getCorsHeaders } from '@/lib/cors'
 
 // OPTIONS 预检请求
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 204,
-    headers: corsHeaders(),
+    headers: getCorsHeaders(request),
   })
 }
 
@@ -26,7 +18,7 @@ export async function POST(request: NextRequest) {
     if (!content) {
       return NextResponse.json(
         { error: '内容不能为空' },
-        { status: 400, headers: corsHeaders() }
+        { status: 400, headers: getCorsHeaders(request) }
       )
     }
 
@@ -56,18 +48,18 @@ export async function POST(request: NextRequest) {
         headers: {
           'Content-Type': 'text/plain; charset=utf-8',
           'Cache-Control': 'no-cache',
-          ...corsHeaders()
+          ...getCorsHeaders(request)
         }
       })
     }
 
     // 普通模式
     const result = await summarizeContent(content, custom_prompt)
-    return NextResponse.json(result, { headers: corsHeaders() })
+    return NextResponse.json(result, { headers: getCorsHeaders(request) })
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : '总结失败' },
-      { status: 500, headers: corsHeaders() }
+      { status: 500, headers: getCorsHeaders(request) }
     )
   }
 }

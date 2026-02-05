@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 
 // GET /api/tags - 获取标签列表
 // POST /api/tags - 创建新标签
 
 export async function GET() {
   try {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
+    const supabase = await createClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json(
-        { error: '数据库未配置' },
-        { status: 500 }
+        { error: '请先登录' },
+        { status: 401 }
       )
     }
 
@@ -39,11 +41,13 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
       return NextResponse.json(
-        { error: '数据库未配置' },
-        { status: 500 }
+        { error: '请先登录' },
+        { status: 401 }
       )
     }
 
@@ -59,7 +63,11 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('tags')
-      .insert({ name, color: color || '#3B82F6' } as never)
+      .insert({ 
+        name, 
+        color: color || '#3B82F6',
+        user_id: user.id 
+      } as never)
       .select()
       .single()
 

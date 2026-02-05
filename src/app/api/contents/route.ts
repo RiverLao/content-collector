@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseClient } from '@/lib/supabase'
-
-// CORS 头
-function corsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  }
-}
+import { getCorsHeaders } from '@/lib/cors'
 
 // OPTIONS 预检请求
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 204,
-    headers: corsHeaders(),
+    headers: getCorsHeaders(request),
   })
 }
 
@@ -29,7 +21,7 @@ export async function GET(request: NextRequest) {
     if (!client) {
       return NextResponse.json(
         { error: '数据库未配置' },
-        { status: 500, headers: corsHeaders() }
+        { status: 500, headers: getCorsHeaders(request) }
       )
     }
 
@@ -80,7 +72,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       return NextResponse.json(
         { error: '获取内容失败' },
-        { status: 500, headers: corsHeaders() }
+        { status: 500, headers: getCorsHeaders(request) }
       )
     }
 
@@ -89,11 +81,11 @@ export async function GET(request: NextRequest) {
       total: count || 0,
       limit,
       offset
-    }, { headers: corsHeaders() })
+    }, { headers: getCorsHeaders(request) })
   } catch (error) {
     return NextResponse.json(
       { error: '服务器错误' },
-      { status: 500, headers: corsHeaders() }
+      { status: 500, headers: getCorsHeaders(request) }
     )
   }
 }
@@ -107,7 +99,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: '请先登录' },
-        { status: 401, headers: corsHeaders() }
+        { status: 401, headers: getCorsHeaders(request) }
       )
     }
 
@@ -115,7 +107,7 @@ export async function POST(request: NextRequest) {
     if (!client) {
       return NextResponse.json(
         { error: '数据库未配置' },
-        { status: 500, headers: corsHeaders() }
+        { status: 500, headers: getCorsHeaders(request) }
       )
     }
 
@@ -125,7 +117,7 @@ export async function POST(request: NextRequest) {
     if (!url) {
       return NextResponse.json(
         { error: 'URL 不能为空' },
-        { status: 400, headers: corsHeaders() }
+        { status: 400, headers: getCorsHeaders(request) }
       )
     }
 
@@ -147,17 +139,24 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
+      console.error('Supabase Insert Error:', error)
       return NextResponse.json(
-        { error: '保存失败' },
-        { status: 500, headers: corsHeaders() }
+        { 
+          error: error.message || '保存失败',
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        },
+        { status: 500, headers: getCorsHeaders(request) }
       )
     }
 
-    return NextResponse.json(data, { headers: corsHeaders() })
-  } catch (error) {
+    return NextResponse.json(data, { headers: getCorsHeaders(request) })
+  } catch (error: any) {
+    console.error('API Error:', error)
     return NextResponse.json(
-      { error: '服务器错误' },
-      { status: 500, headers: corsHeaders() }
+      { error: error.message || '服务器错误' },
+      { status: 500, headers: getCorsHeaders(request) }
     )
   }
 }

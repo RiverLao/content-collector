@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "第二大脑 - 一键保存",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "一键保存当前网页到第二大脑，自动提取内容并AI总结",
   "permissions": [
     "activeTab",
